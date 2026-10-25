@@ -102,7 +102,7 @@
         "category": { ".validate": "newData.val() === 'Food and Groceries' || newData.val() === 'Medicine and Medical' || newData.val() === 'School Supplies' || newData.val() === 'Transportation' || newData.val() === 'Shelter and Materials' || newData.val() === 'Other'" },
         "expenseDate": { ".validate": "newData.isString() && newData.val().matches(/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/)" },
         "documents": {
-          ".validate": "newData.hasChildren() && newData.numChildren() <= 8",
+         
           "$index": {
             ".validate": "newData.hasChildren(['type', 'url'])",
             "type": { ".validate": "newData.val() === 'Receipt' || newData.val() === 'Invoice' || newData.val() === 'Photo of goods' || newData.val() === 'Acknowledgment receipt' || newData.val() === 'Other'" },

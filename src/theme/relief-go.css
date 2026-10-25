@@ -1,0 +1,47 @@
+/* RELIEF GO theme: dark green primary with complementary green accents */
+
+:root {
+  /* Primary: dark green */
+  --ion-color-primary: #1b5e20;
+  --ion-color-primary-rgb: 27, 94, 32;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #18541c;
+  --ion-color-primary-tint: #327033;
+
+  /* Secondary: accent green */
+  --ion-color-secondary: #43a047;
+  --ion-color-secondary-rgb: 67, 160, 71;
+  --ion-color-secondary-contrast: #ffffff;
+  --ion-color-secondary-contrast-rgb: 255, 255, 255;
+  --ion-color-secondary-shade: #3b8d3e;
+  --ion-color-secondary-tint: #56aa59;
+
+  /* White backgrounds */
+  --ion-background-color: #ffffff;
+  --ion-background-color-rgb: 255, 255, 255;
+  --ion-text-color: #1f2933;
+  --ion-text-color-rgb: 31, 41, 51;
+
+  /* Rounded corners used across the app */
+  --rg-radius: 16px;
+  --rg-green-soft: #e8f5e9;
+}
+
+ion-card {
+  border-radius: var(--rg-radius);
+  box-shadow: 0 2px 10px rgba(27, 94, 32, 0.12);
+}
+
+ion-button {
+  --border-radius: 999px;
+  text-transform: none;
+  font-weight: 600;
+}
+
+ion-progress-bar {
+  height: 10px;
+  border-radius: 999px;
+  --progress-background: var(--ion-color-secondary);
+  --background: var(--rg-green-soft);
+}

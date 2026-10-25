@@ -1,0 +1,43 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+
+      // Self-registration: only donor or organizer, never admin
+      allow create: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(
+             ['uid', 'email', 'displayName', 'role', 'phone', 'isSuspended', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.role in ['donor', 'organizer']
+        && request.resource.data.isSuspended == false;
+
+      // Users may edit only their own name and phone
+      allow update: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['displayName', 'phone']);
+
+      // Admins may change roles and suspend accounts
+      allow update: if isAdmin();
+
+      allow delete: if false;
+    }
+
+    // Everything else is blocked until we add rules for it in later stages
+  }
+}

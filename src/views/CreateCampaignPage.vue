@@ -144,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import {
   IonPage,
@@ -202,6 +202,12 @@ const errorMessage = ref('');
 const blockMessage = ref('');
 const existing = ref<Campaign | null>(null);
 
+// Address auto-fill state (the address follows the map pin)
+const GEOCODE_DELAY_MS = 600;
+let geocodeTimer: ReturnType<typeof setTimeout> | null = null;
+let geocodeRequestId = 0;
+let lastAutoAddress = '';
+
 const showPreview = computed(() => imageUrl.value.trim().startsWith('https://'));
 
 /** Today's date as YYYY-MM-DD in the person's own time zone. */
@@ -209,7 +215,16 @@ function today(): string {
   return new Date().toLocaleDateString('en-CA');
 }
 
+function cancelGeocode() {
+  if (geocodeTimer !== null) {
+    clearTimeout(geocodeTimer);
+    geocodeTimer = null;
+  }
+  geocodeRequestId++;
+}
+
 function resetForm() {
+  cancelGeocode();
   title.value = '';
   category.value = '';
   description.value = '';
@@ -223,6 +238,7 @@ function resetForm() {
   imageUrl.value = '';
   errorMessage.value = '';
   blockMessage.value = '';
+  lastAutoAddress = '';
   existing.value = null;
 }
 
@@ -242,6 +258,55 @@ function fillForm(campaign: Campaign) {
       : null;
   imageUrl.value = campaign.imageUrl;
 }
+
+/** Turns coordinates into a readable address using the Google Geocoding API. */
+async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  const key = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  if (!key) return '';
+
+  const url =
+    'https://maps.googleapis.com/maps/api/geocode/json?latlng=' +
+    `${lat},${lng}&key=${encodeURIComponent(key)}`;
+
+  const response = await fetch(url);
+  if (!response.ok) return '';
+
+  const data = await response.json();
+  if (data.status !== 'OK' || !data.results?.length) return '';
+  return String(data.results[0].formatted_address || '');
+}
+
+/**
+ * Whenever the pin changes (current-location button, map tap, or dragging the marker),
+ * look up the address. Text the person typed themselves is never overwritten.
+ */
+watch(pin, (point) => {
+  if (geocodeTimer !== null) {
+    clearTimeout(geocodeTimer);
+    geocodeTimer = null;
+  }
+  if (!point) return;
+
+  const current = locationAddress.value.trim();
+  if (current !== '' && current !== lastAutoAddress) return;
+
+  const requestId = ++geocodeRequestId;
+  geocodeTimer = setTimeout(async () => {
+    geocodeTimer = null;
+    try {
+      const address = await reverseGeocode(point.lat, point.lng);
+      if (requestId !== geocodeRequestId || !address) return;
+
+      const latest = locationAddress.value.trim();
+      if (latest === '' || latest === lastAutoAddress) {
+        locationAddress.value = address;
+        lastAutoAddress = address;
+      }
+    } catch {
+      // The pin is still saved even if the address lookup fails
+    }
+  }, GEOCODE_DELAY_MS);
+});
 
 onIonViewWillEnter(async () => {
   resetForm();
@@ -263,6 +328,10 @@ onIonViewWillEnter(async () => {
   } finally {
     loading.value = false;
   }
+});
+
+onBeforeUnmount(() => {
+  cancelGeocode();
 });
 
 function validate(): string {

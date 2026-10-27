@@ -1,175 +1,211 @@
 <template>
   <ion-page>
-    <ion-header>
-      <ion-toolbar color="primary">
-        <ion-title>Admin Dashboard</ion-title>
-        <ion-buttons slot="end">
-          <ion-button @click="handleLogout">
-            <ion-icon slot="start" :icon="logOutOutline"></ion-icon>
-            Log out
-          </ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
+    <!-- Sidebar -->
+    <ion-menu content-id="admin-main" menu-id="admin-menu" type="overlay">
+      <ion-header @mouseenter="cancelClose" @mouseleave="scheduleClose">
+        <ion-toolbar color="primary">
+          <ion-title>Admin menu</ion-title>
+        </ion-toolbar>
+      </ion-header>
 
-    <ion-content class="ion-padding">
-      <div class="wrapper">
-        <h2>Hello, {{ currentUser?.displayName }}!</h2>
-
+      <ion-content @mouseenter="cancelClose" @mouseleave="scheduleClose">
         <ion-list lines="full" class="nav">
-          <ion-item button detail router-link="/admin/campaigns">
-            <ion-label>Campaign Management</ion-label>
-          </ion-item>
-          <ion-item button detail router-link="/admin/donations">
-            <ion-label>Verify Donations</ion-label>
-            <ion-badge v-if="stats && stats.pendingDonations > 0" slot="end" color="warning">
-              {{ stats.pendingDonations }}
-            </ion-badge>
-          </ion-item>
-          <ion-item button detail router-link="/admin/expenses">
-            <ion-label>Review Expenses</ion-label>
-            <ion-badge v-if="stats && stats.pendingExpenses > 0" slot="end" color="warning">
-              {{ stats.pendingExpenses }}
-            </ion-badge>
-          </ion-item>
-          <ion-item button detail router-link="/admin/users">
-            <ion-label>User Management</ion-label>
-          </ion-item>
-          <ion-item button detail router-link="/admin/reports">
-            <ion-label>Reports</ion-label>
-          </ion-item>
-          <ion-item button detail router-link="/admin/audit-logs">
-            <ion-label>Audit Logs</ion-label>
-          </ion-item>
+          <ion-menu-toggle :auto-hide="false">
+            <ion-item button detail router-link="/admin/campaigns">
+              <ion-label>Campaign Management</ion-label>
+            </ion-item>
+          </ion-menu-toggle>
+          <ion-menu-toggle :auto-hide="false">
+            <ion-item button detail router-link="/admin/donations">
+              <ion-label>Verify Donations</ion-label>
+              <ion-badge v-if="stats && stats.pendingDonations > 0" slot="end" color="warning">
+                {{ stats.pendingDonations }}
+              </ion-badge>
+            </ion-item>
+          </ion-menu-toggle>
+          <ion-menu-toggle :auto-hide="false">
+            <ion-item button detail router-link="/admin/expenses">
+              <ion-label>Review Expenses</ion-label>
+              <ion-badge v-if="stats && stats.pendingExpenses > 0" slot="end" color="warning">
+                {{ stats.pendingExpenses }}
+              </ion-badge>
+            </ion-item>
+          </ion-menu-toggle>
+          <ion-menu-toggle :auto-hide="false">
+            <ion-item button detail router-link="/admin/users">
+              <ion-label>User Management</ion-label>
+            </ion-item>
+          </ion-menu-toggle>
+          <ion-menu-toggle :auto-hide="false">
+            <ion-item button detail router-link="/admin/reports">
+              <ion-label>Reports</ion-label>
+            </ion-item>
+          </ion-menu-toggle>
+          <ion-menu-toggle :auto-hide="false">
+            <ion-item button detail router-link="/admin/audit-logs">
+              <ion-label>Audit Logs</ion-label>
+            </ion-item>
+          </ion-menu-toggle>
         </ion-list>
+      </ion-content>
+    </ion-menu>
 
-        <div v-if="loading" class="state-box">
-          <ion-spinner name="crescent" color="primary"></ion-spinner>
-          <p>Loading dashboard...</p>
-        </div>
+    <!-- Main content -->
+    <div class="ion-page" id="admin-main">
+      <ion-header>
+        <ion-toolbar color="primary">
+          <ion-buttons slot="start">
+            <ion-button
+              aria-label="Toggle menu"
+              @pointerenter="onButtonHover"
+              @pointerleave="onButtonLeave"
+              @click="toggleMenu"
+            >
+              <ion-icon slot="icon-only" :icon="menuOutline"></ion-icon>
+            </ion-button>
+          </ion-buttons>
+          <ion-title>Admin Dashboard</ion-title>
+          <ion-buttons slot="end">
+            <ion-button @click="handleLogout">
+              <ion-icon slot="start" :icon="logOutOutline"></ion-icon>
+              Log out
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
 
-        <div v-else-if="errorMessage" class="state-box">
-          <ion-icon :icon="alertCircleOutline" class="state-icon"></ion-icon>
-          <h3>Something went wrong</h3>
-          <p>{{ errorMessage }}</p>
-        </div>
+      <ion-content class="ion-padding">
+        <div class="wrapper">
+          <h2>Hello, {{ currentUser?.displayName }}!</h2>
 
-        <template v-else-if="stats && charts">
-          <div class="stat-grid">
-            <div class="stat">
-              <strong>{{ stats.totalUsers }}</strong>
-              <span>Registered users</span>
-            </div>
-            <div class="stat">
-              <strong>{{ stats.activeCampaigns }}</strong>
-              <span>Active campaigns</span>
-            </div>
-            <div class="stat">
-              <strong>{{ formatPeso(stats.verifiedDonationsTotal) }}</strong>
-              <span>Verified donations</span>
-            </div>
-            <div class="stat warn">
-              <strong>{{ stats.pendingDonations }}</strong>
-              <span>Donations to verify</span>
-            </div>
-            <div class="stat warn">
-              <strong>{{ stats.pendingExpenses }}</strong>
-              <span>Expenses to review</span>
-            </div>
-            <div class="stat">
-              <strong>{{ formatPeso(stats.approvedExpensesTotal) }}</strong>
-              <span>Approved documented expenses</span>
-            </div>
+          <div v-if="loading" class="state-box">
+            <ion-spinner name="crescent" color="primary"></ion-spinner>
+            <p>Loading dashboard...</p>
           </div>
 
-          <ion-card>
-            <ion-card-header>
-              <ion-card-title>Campaigns nearing their deadline</ion-card-title>
-              <ion-card-subtitle>Active campaigns ending within 7 days</ion-card-subtitle>
-            </ion-card-header>
-            <ion-card-content>
-              <p v-if="stats.nearingDeadline.length === 0" class="muted">
-                No campaigns are ending this week.
-              </p>
-              <ion-list v-else lines="none">
-                <ion-item
-                  v-for="item in stats.nearingDeadline"
-                  :key="item.id"
-                  button
-                  :router-link="`/campaigns/${item.id}`"
-                >
-                  <ion-label>{{ item.title }}</ion-label>
-                  <ion-note slot="end">{{ item.days }} {{ item.days === 1 ? 'day' : 'days' }}</ion-note>
-                </ion-item>
-              </ion-list>
-            </ion-card-content>
-          </ion-card>
-
-          <div class="chart-grid">
-            <ion-card>
-              <ion-card-header>
-                <ion-card-title>Verified donations by month</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
-                <div v-if="hasMonthly" class="chart-box">
-                  <Bar :data="monthlyChart" :options="barOptions" />
-                </div>
-                <p v-else class="muted">No verified donations in the last 6 months.</p>
-              </ion-card-content>
-            </ion-card>
-
-            <ion-card>
-              <ion-card-header>
-                <ion-card-title>Campaigns by category</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
-                <div v-if="charts.categories.length > 0" class="chart-box">
-                  <Doughnut :data="categoryChart" :options="doughnutOptions" />
-                </div>
-                <p v-else class="muted">No campaigns yet.</p>
-              </ion-card-content>
-            </ion-card>
-
-            <ion-card>
-              <ion-card-header>
-                <ion-card-title>Fundraising progress</ion-card-title>
-                <ion-card-subtitle>Top live campaigns: raised vs. goal</ion-card-subtitle>
-              </ion-card-header>
-              <ion-card-content>
-                <div v-if="charts.progress.length > 0" class="chart-box">
-                  <Bar :data="progressChart" :options="progressOptions" />
-                </div>
-                <p v-else class="muted">No active campaigns yet.</p>
-              </ion-card-content>
-            </ion-card>
-
-            <ion-card>
-              <ion-card-header>
-                <ion-card-title>Donation statuses</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
-                <div v-if="charts.statuses.length > 0" class="chart-box">
-                  <Doughnut :data="statusChart" :options="doughnutOptions" />
-                </div>
-                <p v-else class="muted">No donations yet.</p>
-              </ion-card-content>
-            </ion-card>
-
-            <ion-card>
-              <ion-card-header>
-                <ion-card-title>Verified expenses by category</ion-card-title>
-              </ion-card-header>
-              <ion-card-content>
-                <div v-if="charts.expenseCategories.length > 0" class="chart-box">
-                  <Doughnut :data="expenseChart" :options="doughnutOptions" />
-                </div>
-                <p v-else class="muted">No verified expenses yet.</p>
-              </ion-card-content>
-            </ion-card>
+          <div v-else-if="errorMessage" class="state-box">
+            <ion-icon :icon="alertCircleOutline" class="state-icon"></ion-icon>
+            <h3>Something went wrong</h3>
+            <p>{{ errorMessage }}</p>
           </div>
-        </template>
-      </div>
-    </ion-content>
+
+          <template v-else-if="stats && charts">
+            <div class="stat-grid">
+              <div class="stat">
+                <strong>{{ stats.totalUsers }}</strong>
+                <span>Registered users</span>
+              </div>
+              <div class="stat">
+                <strong>{{ stats.activeCampaigns }}</strong>
+                <span>Active campaigns</span>
+              </div>
+              <div class="stat">
+                <strong>{{ formatPeso(stats.verifiedDonationsTotal) }}</strong>
+                <span>Verified donations</span>
+              </div>
+              <div class="stat warn">
+                <strong>{{ stats.pendingDonations }}</strong>
+                <span>Donations to verify</span>
+              </div>
+              <div class="stat warn">
+                <strong>{{ stats.pendingExpenses }}</strong>
+                <span>Expenses to review</span>
+              </div>
+              <div class="stat">
+                <strong>{{ formatPeso(stats.approvedExpensesTotal) }}</strong>
+                <span>Approved documented expenses</span>
+              </div>
+            </div>
+
+            <ion-card>
+              <ion-card-header>
+                <ion-card-title>Campaigns nearing their deadline</ion-card-title>
+                <ion-card-subtitle>Active campaigns ending within 7 days</ion-card-subtitle>
+              </ion-card-header>
+              <ion-card-content>
+                <p v-if="stats.nearingDeadline.length === 0" class="muted">
+                  No campaigns are ending this week.
+                </p>
+                <ion-list v-else lines="none">
+                  <ion-item
+                    v-for="item in stats.nearingDeadline"
+                    :key="item.id"
+                    button
+                    :router-link="`/campaigns/${item.id}`"
+                  >
+                    <ion-label>{{ item.title }}</ion-label>
+                    <ion-note slot="end">{{ item.days }} {{ item.days === 1 ? 'day' : 'days' }}</ion-note>
+                  </ion-item>
+                </ion-list>
+              </ion-card-content>
+            </ion-card>
+
+            <div class="chart-grid">
+              <ion-card>
+                <ion-card-header>
+                  <ion-card-title>Verified donations by month</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <div v-if="hasMonthly" class="chart-box">
+                    <Bar :data="monthlyChart" :options="barOptions" />
+                  </div>
+                  <p v-else class="muted">No verified donations in the last 6 months.</p>
+                </ion-card-content>
+              </ion-card>
+
+              <ion-card>
+                <ion-card-header>
+                  <ion-card-title>Campaigns by category</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <div v-if="charts.categories.length > 0" class="chart-box">
+                    <Doughnut :data="categoryChart" :options="doughnutOptions" />
+                  </div>
+                  <p v-else class="muted">No campaigns yet.</p>
+                </ion-card-content>
+              </ion-card>
+
+              <ion-card>
+                <ion-card-header>
+                  <ion-card-title>Fundraising progress</ion-card-title>
+                  <ion-card-subtitle>Top live campaigns: raised vs. goal</ion-card-subtitle>
+                </ion-card-header>
+                <ion-card-content>
+                  <div v-if="charts.progress.length > 0" class="chart-box">
+                    <Bar :data="progressChart" :options="progressOptions" />
+                  </div>
+                  <p v-else class="muted">No active campaigns yet.</p>
+                </ion-card-content>
+              </ion-card>
+
+              <ion-card>
+                <ion-card-header>
+                  <ion-card-title>Donation statuses</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <div v-if="charts.statuses.length > 0" class="chart-box">
+                    <Doughnut :data="statusChart" :options="doughnutOptions" />
+                  </div>
+                  <p v-else class="muted">No donations yet.</p>
+                </ion-card-content>
+              </ion-card>
+
+              <ion-card>
+                <ion-card-header>
+                  <ion-card-title>Verified expenses by category</ion-card-title>
+                </ion-card-header>
+                <ion-card-content>
+                  <div v-if="charts.expenseCategories.length > 0" class="chart-box">
+                    <Doughnut :data="expenseChart" :options="doughnutOptions" />
+                  </div>
+                  <p v-else class="muted">No verified expenses yet.</p>
+                </ion-card-content>
+              </ion-card>
+            </div>
+          </template>
+        </div>
+      </ion-content>
+    </div>
   </ion-page>
 </template>
 
@@ -178,6 +214,8 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage,
+  IonMenu,
+  IonMenuToggle,
   IonHeader,
   IonToolbar,
   IonTitle,
@@ -196,9 +234,10 @@ import {
   IonCardSubtitle,
   IonCardContent,
   IonSpinner,
+  menuController,
   onIonViewWillEnter,
 } from '@ionic/vue';
-import { alertCircleOutline, logOutOutline } from 'ionicons/icons';
+import { alertCircleOutline, logOutOutline, menuOutline } from 'ionicons/icons';
 import { Bar, Doughnut } from 'vue-chartjs';
 import type { ChartData, ChartOptions } from 'chart.js';
 import { CHART_COLORS } from '../utils/chartSetup';
@@ -233,6 +272,40 @@ onIonViewWillEnter(async () => {
     loading.value = false;
   }
 });
+
+/* ---------- Sidebar hover / toggle ---------- */
+
+const MENU_ID = 'admin-menu';
+let closeTimer: ReturnType<typeof setTimeout> | undefined;
+
+function cancelClose() {
+  if (closeTimer) clearTimeout(closeTimer);
+  closeTimer = undefined;
+}
+
+function scheduleClose() {
+  cancelClose();
+  closeTimer = setTimeout(() => {
+    menuController.close(MENU_ID);
+  }, 250);
+}
+
+// Hover only applies to a mouse; touch devices use the tap (click) instead.
+function onButtonHover(event: PointerEvent) {
+  if (event.pointerType !== 'mouse') return;
+  cancelClose();
+  menuController.open(MENU_ID);
+}
+
+function onButtonLeave(event: PointerEvent) {
+  if (event.pointerType !== 'mouse') return;
+  scheduleClose();
+}
+
+function toggleMenu() {
+  cancelClose();
+  menuController.toggle(MENU_ID);
+}
 
 async function handleLogout() {
   await logoutUser();
@@ -322,10 +395,9 @@ h2 {
   color: var(--ion-color-primary);
 }
 
+/* Sidebar nav (was the top list) */
 .nav {
-  border-radius: 16px;
-  overflow: hidden;
-  margin-bottom: 16px;
+  padding: 0;
 }
 
 .stat-grid {
